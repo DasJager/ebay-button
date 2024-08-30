@@ -1,0 +1,106 @@
+// ==UserScript==
+// @name         eBay Buy It Now Confirmation
+// @namespace    http://tampermonkey.net/
+// @version      0.2
+// @description  Replaces the Buy It Now button on eBay with a custom button that requires confirmation
+// @match        https://www.ebay.com/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Function to create and show the confirmation modal
+    function showConfirmationModal(href, userName) {
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.style.zIndex = '10000';
+
+        const modalContent = document.createElement('div');
+        modalContent.style.backgroundColor = 'white';
+        modalContent.style.padding = '30px';
+        modalContent.style.borderRadius = '10px';
+        modalContent.style.textAlign = 'center';
+
+        const message = document.createElement('div');
+        message.textContent = `Are you sure you want to buy this, ${userName}?`;
+        message.style.fontSize = '24px';
+        message.style.marginBottom = '20px';
+
+        const confirmButton = document.createElement('button');
+        confirmButton.textContent = 'Yes';
+        confirmButton.style.fontSize = '20px';
+        confirmButton.style.padding = '15px 30px';
+        confirmButton.style.marginRight = '20px';
+        confirmButton.onclick = function() {
+            window.location.href = href; // Proceed with the purchase by navigating to the href
+        };
+
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'No';
+        cancelButton.style.fontSize = '20px';
+        cancelButton.style.padding = '15px 30px';
+        cancelButton.onclick = function() {
+            modal.remove(); // Just close the modal
+        };
+
+        modalContent.appendChild(message);
+        modalContent.appendChild(confirmButton);
+        modalContent.appendChild(cancelButton);
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+    }
+
+    // Function to fetch the user's name from the eBay page
+    function getUserName() {
+        // Try to locate the username on the page (e.g., in the header or account section)
+        const userNameElement = document.querySelector('#gh-ug > b') ||
+                                document.querySelector('.gh-ug-guest a') ||
+                                document.querySelector('.gh-eb-u > a > b');
+
+        if (userNameElement) {
+            return userNameElement.textContent.trim();
+        } else {
+            return 'user'; // Fallback in case the username can't be found
+        }
+    }
+
+    // Select the original Buy It Now button
+    const buyItNowButton = document.querySelector('a#binBtn_btn_1');
+
+    if (buyItNowButton) {
+        // Get the href for later use
+        const href = buyItNowButton.href;
+
+        // Get the user's name dynamically
+        const userName = getUserName();
+
+        // Create a new button
+        const customButton = document.createElement('button');
+        customButton.textContent = 'Are you sure you want to buy this ?';
+        customButton.style.fontSize = '30px';
+        customButton.style.padding = '15px 30px';
+        customButton.style.backgroundColor = '#d70f38';
+        customButton.style.color = 'white';
+        customButton.style.border = 'none';
+        customButton.style.borderRadius = '5px';
+        customButton.style.cursor = 'pointer';
+
+        // Replace the original Buy It Now button with the custom button
+        buyItNowButton.parentNode.replaceChild(customButton, buyItNowButton);
+
+        // Add an event listener to the custom button
+        customButton.addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent the default navigation
+            showConfirmationModal(href, userName); // Show the confirmation modal with the href and user's name
+        });
+    }
+})();
